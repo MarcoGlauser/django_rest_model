@@ -1,13 +1,13 @@
 from django.contrib.admin import ModelAdmin, StackedInline, TabularInline
 
 
-class DjangoRestModelAdmin(ModelAdmin):
+class RestModelAdmin(ModelAdmin):
     pass
 
 
-class DjangoRestModelStackedInline(StackedInline):
+class RestModelStackedInline(StackedInline):
     pass
 
 
-class DjangoRestModelTabularInline(TabularInline):
+class RestModelTabularInline(TabularInline):
     pass
