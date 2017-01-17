@@ -1,4 +1,4 @@
-from django_rest_model.db.query import RestQuerySet
+from django_rest_model.db.query import RestQuerySet, PaginatedRestQuerySet
 
 
 class BaseManager(object):
@@ -43,3 +43,6 @@ class BaseManager(object):
 
 class RestManager(BaseManager):
     queryset = RestQuerySet
+
+class PaginatedRestManager(RestManager):
+    queryset = PaginatedRestQuerySet

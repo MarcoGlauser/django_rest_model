@@ -4,7 +4,7 @@ from django.db.models.base import ModelState
 from django.db.models.fields.related import ForeignObjectRel
 
 
-from .managers import RestManager
+from .managers import RestManager, PaginatedRestManager
 
 
 class Constructor(type):
@@ -15,14 +15,12 @@ class Constructor(type):
             dm = attrs.pop('_default_manager')
             klass._default_manager = dm
         except KeyError:
-            pass # _default_manager already instantiated from inheritance
+            pass # _default_manager already set from inheritance
 
         klass.objects = klass._default_manager(klass)
 
-        class DoesNotExist(Exception):
-            pass
-        class MultipleObjectsReturned(Exception):
-            pass
+        class DoesNotExist(Exception): pass
+        class MultipleObjectsReturned(Exception):pass
 
         klass.DoesNotExist = DoesNotExist
         klass.MultipleObjectsReturned = MultipleObjectsReturned
@@ -57,6 +55,7 @@ class RestModel(object,metaclass = Constructor):
     _state = ModelState()
     _default_manager = RestManager
     objects = None #IDE Autocompletion
+
 
     class Meta:
         pass
@@ -143,10 +142,6 @@ class RestModel(object,metaclass = Constructor):
             return getattr(self, field_name)
         return getattr(self, field.attname)
 
-    @property
-    def pk(self):
-        return self.id
-
     def __eq__(self, other):
         if isinstance(other, RestModel):
             return self.pk == other.pk
@@ -167,4 +162,4 @@ class RestModel(object,metaclass = Constructor):
 
 
 class PaginatedDRFModel(RestModel):
-    pass
+    _default_manager = PaginatedRestManager

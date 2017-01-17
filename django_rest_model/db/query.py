@@ -48,10 +48,14 @@ class BaseQuerySet:
         return self.count()
 
     def filter(self, *args, **kwargs):
-        self.filter_query = self._get_filter_args(args, kwargs)
+        existing_query_copy = dict(self.filter_query)
+        existing_query_copy.update(self._get_filter_args(args, kwargs))
+        self.filter_query = existing_query_copy
         return self
 
     def get(self, *args, **kwargs):
+        self.filter(*args,**kwargs)
+
         result = self._get_data()
         number_of_results = len(result)
         if number_of_results == 1:
@@ -85,9 +89,14 @@ class BaseQuerySet:
 
 
 class RestQuerySet(BaseQuerySet):
+
+    def __init__(self, *args, **kwargs):
+        super(RestQuerySet, self).__init__(*args, **kwargs)
+        self.identifier = None
+
     def _get_data(self):
         if not self._cache:
-            if 'id' in self.filter_query:
+            if ['id'] in self.filter_query:
                 #thread = self.mailer.get_thread_by_id(self.credentials,
                 #                                      self.filter_query['id'],
                 #                                      cls=self.model)
@@ -106,7 +115,38 @@ class RestQuerySet(BaseQuerySet):
     def _create(self, instance):
         pass
 
+
+    def _get_detail_url(self):
+        if self.identifier:
+            return '%s%s/' % (self.model._base_url, self.identifier)
+        raise Exception('no Identifier provided (id or pk missing in Query)')
+
+    def _get_filter_args(self, args, kwargs):
+        filter_args = kwargs if kwargs else {}
+        if len(args) > 0:
+            filter_args.update(dict(args[0].children))
+
+        if 'id' in filter_args:
+            self.identifier = filter_args['id']
+            filter_args.pop('id')
+        if 'pk' in filter_args:
+            self.identifier = filter_args['pk']
+            filter_args.pop('pk')
+
+        return filter_args
+
     @property
     def url(self):
-        request = Request('GET', self.model._base_url, params=self.filter_query, headers=None)
+        base_url = self.model._base_url
+        params = self.filter_query
+
+        if self.identifier:
+            base_url = self._get_detail_url()
+
+        request = Request('GET', base_url, params=params, headers=None)
         return request.prepare().url
+
+class PaginatedRestQuerySet(RestQuerySet):
+    #Todo
+    def count(self):
+        raise NotImplementedError

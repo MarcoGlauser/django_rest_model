@@ -9,7 +9,6 @@ if __name__ == "__main__":
     os.environ['DJANGO_SETTINGS_MODULE'] = 'django_rest_model.test.test_settings'
     django.setup()
     TestRunner = get_runner(settings)
-    print(settings.INSTALLED_APPS)
     test_runner = TestRunner()
     failures = test_runner.run_tests(["test"])
     sys.exit(bool(failures))
