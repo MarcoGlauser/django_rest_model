@@ -1,7 +1,8 @@
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import AutoField
 from django.db.models.base import ModelState
-from django.db.models.fields.reverse_related import ForeignObjectRel
+from django.db.models.fields.related import ForeignObjectRel
+
 
 from .managers import RestManager
 
