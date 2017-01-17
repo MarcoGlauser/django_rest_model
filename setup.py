@@ -14,9 +14,7 @@ setup(
     install_requires=[
         'Django>=1.8',
         'requests>=2.12',
-        'djangorestframework>=3.5',
-        'djangorestframework-yaml',
-        'djangorestframework-xml'
+        'djangorestframework>=3.5'
     ],
     classifiers=[
         'Programming Language :: Python',

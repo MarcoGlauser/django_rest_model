@@ -19,12 +19,6 @@ class Constructor(type):
 
         klass.objects = klass._default_manager(klass)
 
-        class DoesNotExist(Exception): pass
-        class MultipleObjectsReturned(Exception):pass
-
-        klass.DoesNotExist = DoesNotExist
-        klass.MultipleObjectsReturned = MultipleObjectsReturned
-
         #stuff for foreign Key
         #Todo: Options
 
@@ -61,6 +55,13 @@ class RestModel(object,metaclass = Constructor):
         pass
 
     def __init__(self,*args, **kwargs):
+
+        class DoesNotExist(Exception): pass
+        class MultipleObjectsReturned(Exception):pass
+
+        self.DoesNotExist = DoesNotExist
+        self.MultipleObjectsReturned = MultipleObjectsReturned
+
         opts = self._meta
         if not kwargs:
             fields_iter = iter(opts.concrete_fields)
