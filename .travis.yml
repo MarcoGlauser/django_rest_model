@@ -13,7 +13,8 @@ env:
   - DJANGO_VERSION=1.10
 
 install:
-  - pip install -q Django==$DJANGO_VERSION pytest-cov coverage coveralls -e .
+  - pip install -q -r requirements.txt
+  - pip install -q --upgrade Django==$DJANGO_VERSION
   - python setup.py -q install
 
 script: coverage run --source=django_rest_model setup.py test
