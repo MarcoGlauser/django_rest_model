@@ -1,11 +1,10 @@
 from django.db import models
 from django.test import TestCase
 
-from django_rest_model.db.managers import RestManager
 from django_rest_model.db.models import PaginatedDRFModel, RestModel
 
 
-class Bla(PaginatedDRFModel):
+class RestTestModel(PaginatedDRFModel):
     _base_url = 'http://test.com/'
 
     id = models.IntegerField()
@@ -15,29 +14,31 @@ class Bla(PaginatedDRFModel):
         app_label = "test"
         fields = ['id','name']
 
-class NormalDBModel(models.Model):
+
+'''class NormalDBModel(models.Model):
     name = models.CharField(max_length=256)
-    Test = models.ForeignKey(Bla)
+    #Test = models.ForeignKey(Bla)
 
     class Meta:
         app_label = 'tests'
-
+'''
 
 
 
 class TestFilter(TestCase):
     def test_simple(self):
-        request_url = Bla.objects.filter(name='test').url
+        request_url = RestTestModel.objects.filter(name='test').url
         self.assertEqual(request_url,'http://test.com/?name=test')
 
     def test_chain(self):
-        request_url = Bla.objects.filter(name='test',test__id=1).url
+        request_url = RestTestModel.objects.filter(name='test', test__id=1).url
         self.assertIn(request_url,['http://test.com/?name=test&test__id=1','http://test.com/?test__id=1&name=test'])
 
-    def test_FK(self):
+'''    def test_FK(self):
         Bla(id=1)
         NormalDBModel()
         request_url = Bla.objects.filter(name='test', test__id=1).url
+'''
 
 #Bla.objects.get(pk=1) -> GET /1/ or GET http://test.com/bla/?pk=1
 #Bla.objects.filter(name__contains='asdf') -> GET /?name__contains='asdf'

@@ -10,7 +10,6 @@ class Constructor(type):
     def __new__(cls, name, bases, attrs):
 
         klass = super(Constructor, cls).__new__(cls, name, bases, attrs)
-        print(klass.__dict__)
         try:
             dm = attrs.pop('_default_manager')
             klass._default_manager = dm
@@ -50,7 +49,6 @@ class Constructor(type):
 
     def __init__(self, name, bases, attrs, **kwargs):
         super(Constructor, self).__init__(name, bases, attrs)
-        print("Would register class %s now." % self)
 
 
 class RestModel(object,metaclass = Constructor):
@@ -64,7 +62,6 @@ class RestModel(object,metaclass = Constructor):
 
     def __init__(self,*args, **kwargs):
         opts = self._meta
-        print(kwargs)
         if not kwargs:
             fields_iter = iter(opts.concrete_fields)
             # The ordering of the zip calls matter - zip throws StopIteration
