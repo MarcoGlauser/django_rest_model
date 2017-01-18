@@ -1,14 +1,11 @@
 from django_rest_model.db.query import RestQuerySet, PaginatedRestQuerySet
 
 
-class BaseManager(object):
+class BaseManager:
 
     def __init__(self, model, **kwargs):
         self.model = model
         self.initial_filter_query = kwargs.get('initial_filter_query', {})
-
-    def complex_filter(self, filter_obj):
-        return self
 
     def order_by(self, *args, **kwargs):
         return self
@@ -23,7 +20,7 @@ class BaseManager(object):
         return self.get_queryset().all()
 
     def count(self):
-        return len(self.get_queryset())
+        return self.get_queryset().count()
 
     def filter(self, *args, **kwargs):
         return self.get_queryset().filter(*args, **kwargs)
@@ -40,6 +37,9 @@ class BaseManager(object):
 
     def get(self, *args, **kwargs):
         return self.get_queryset().get(*args, **kwargs)
+
+    def create(self,*args, **kwargs):
+        return self.get_queryset().create(*args, **kwargs)
 
 class RestManager(BaseManager):
     queryset = RestQuerySet

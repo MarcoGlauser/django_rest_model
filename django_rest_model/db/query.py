@@ -1,3 +1,4 @@
+from django_rest_model.db import helpers
 from requests import Request
 
 
@@ -47,6 +48,9 @@ class BaseQuerySet:
     def __len__(self):
         return self.count()
 
+    def create(self, *args, **kwargs):
+        self._create(*args, **kwargs)
+
     def filter(self, *args, **kwargs):
         existing_query_copy = dict(self.filter_query)
         existing_query_copy.update(self._get_filter_args(args, kwargs))
@@ -63,11 +67,11 @@ class BaseQuerySet:
         if not number_of_results:
             raise self.model.DoesNotExist(
                 "%s matching query does not exist." %
-                self.model._meta.object_name
+                type(self.model)
             )
         raise self.model.MultipleObjectsReturned(
             "get() returned more than one %s -- it returned %s!" %
-            (self.model._meta.object_name, number_of_results)
+            (type(self.model), number_of_results)
         )
 
     def _set_model_attrs(self, instance):
@@ -84,9 +88,8 @@ class BaseQuerySet:
     def _get_data(self):
         raise NotImplementedError
 
-    def _create(self, instance):
+    def _create(self, *args, **kwargs):
         raise NotImplementedError
-
 
 class RestQuerySet(BaseQuerySet):
 
@@ -112,8 +115,27 @@ class RestQuerySet(BaseQuerySet):
                 self._cache = self.filter_query
         return self._cache
 
-    def _create(self, instance):
+    def _create(self, instance = None, **kwargs):
+
+        # todo maybe refactor serializer/get_serializer
+        #instance passed
+        if instance:
+            if not isinstance(instance,type(self.model)):
+                raise TypeError('Wrong Type passed for creating a new instance. %s was provided, %s was required' % (type(instance),type(self.model)))
+            data = instance.get_serializer().data
+        else:
+            data = kwargs
+
+        response = self._send_data('POST',data)
+        serializer = self.model.get_serializer()(data=response)
+        if not serializer.is_valid():
+            raise Exception('Invalid deserialization for %s model: %s' % (type(self.model), serializer.errors))
+        new_instance = helpers.create_instance(self.model.__class__,serializer.validated_data)
+        return new_instance
+
+    def _send_data(self,operation,data):
         pass
+
 
 
     def _get_detail_url(self):
@@ -137,14 +159,17 @@ class RestQuerySet(BaseQuerySet):
 
     @property
     def url(self):
-        base_url = self.model._base_url
+        return self._build_request('GET').url
+
+    def _build_request(self, operation):
+        request_url = self.model._base_url
         params = self.filter_query
 
         if self.identifier:
-            base_url = self._get_detail_url()
+            request_url = self._get_detail_url()
 
-        request = Request('GET', base_url, params=params, headers=None)
-        return request.prepare().url
+        request = Request(operation, request_url, params=params, headers=None)
+        return request.prepare()
 
 class PaginatedRestQuerySet(RestQuerySet):
     #Todo

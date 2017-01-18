@@ -56,79 +56,7 @@ class RestModel(object,metaclass = Constructor):
     class Meta:pass
 
     def __init__(self,*args, **kwargs):
-        opts = self._meta
-        if not kwargs:
-            fields_iter = iter(opts.concrete_fields)
-            # The ordering of the zip calls matter - zip throws StopIteration
-            # when an iter throws it. So if the first iter throws it, the second
-            # is *not* consumed. We rely on this, so don't change the order
-            # without changing the logic.
-            for val, field in zip(args, fields_iter):
-                setattr(self, field.attname, val)
-        else:
-            # Slower, kwargs-ready version.
-            fields_iter = iter(opts.fields)
-            for val, field in zip(args, fields_iter):
-                setattr(self, field.attname, val)
-                kwargs.pop(field.name, None)
-
-        for field in fields_iter:
-            is_related_object = False
-            # Virtual field
-            if field.attname not in kwargs and field.column is None:
-                continue
-            if kwargs:
-                if isinstance(field.remote_field, ForeignObjectRel):
-                    try:
-                        # Assume object instance was passed in.
-                        rel_obj = kwargs.pop(field.name)
-                        is_related_object = True
-                    except KeyError:
-                        try:
-                            # Object instance wasn't passed in -- must be an ID.
-                            val = kwargs.pop(field.attname)
-                        except KeyError:
-                            val = field.get_default()
-                    else:
-                        # Object instance was passed in. Special case: You can
-                        # pass in "None" for related objects if it's allowed.
-                        if rel_obj is None and field.null:
-                            val = None
-                else:
-                    try:
-                        val = kwargs.pop(field.attname)
-                    except KeyError:
-                        # This is done with an exception rather than the
-                        # default argument on pop because we don't want
-                        # get_default() to be evaluated, and then not used.
-                        # Refs #12057.
-                        val = field.get_default()
-            else:
-                val = field.get_default()
-
-            if is_related_object:
-                # If we are passed a related instance, set it using the
-                # field.name instead of field.attname (e.g. "user" instead of
-                # "user_id") so that the object gets properly cached (and type
-                # checked) by the RelatedObjectDescriptor.
-                setattr(self, field.name, rel_obj)
-            else:
-                setattr(self, field.attname, val)
-
-
-        if kwargs:
-            property_names = opts._property_names
-            for prop in tuple(kwargs):
-                try:
-                    # Any remaining kwargs must correspond to properties or
-                    # virtual fields.
-                    if prop in property_names or opts.get_field(prop):
-                        setattr(self, prop, kwargs[prop])
-                        del kwargs[prop]
-                except (AttributeError, FieldDoesNotExist):
-                    pass
-            if kwargs:
-                raise TypeError("'%s' is an invalid keyword argument for this function" % list(kwargs)[0])
+        pass
 
     def serializable_value(self, field_name):
         try:
@@ -157,6 +85,12 @@ class RestModel(object,metaclass = Constructor):
     def _get_pk_val(self):
         return None
 
+    @property
+    def _serializer(self):
+        raise NotImplementedError
+
+    def get_serializer(self):
+        return self._serializer
 
 
 class PaginatedDRFModel(RestModel):
