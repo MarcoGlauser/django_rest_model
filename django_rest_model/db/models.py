@@ -35,8 +35,8 @@ class Constructor(type):
             auto = AutoField(verbose_name='ID', primary_key=True, auto_created=True)
             setattr(klass,'id', auto)
         setattr(klass._meta, 'pk',getattr(klass,'id'))
-        setattr(klass._meta, 'object_name',"asdf")
-        setattr(klass._meta, 'label', "asdf")
+        setattr(klass._meta, 'object_name',name)
+        setattr(klass._meta, 'label', name)
 
         return klass
 
@@ -50,18 +50,16 @@ class RestModel(object,metaclass = Constructor):
     _default_manager = RestManager
     objects = None #IDE Autocompletion
 
+    class DoesNotExist(Exception):
+        pass
+
+    class MultipleObjectsReturned(Exception):
+        pass
 
     class Meta:
         pass
 
     def __init__(self,*args, **kwargs):
-
-        class DoesNotExist(Exception): pass
-        class MultipleObjectsReturned(Exception):pass
-
-        self.DoesNotExist = DoesNotExist
-        self.MultipleObjectsReturned = MultipleObjectsReturned
-
         opts = self._meta
         if not kwargs:
             fields_iter = iter(opts.concrete_fields)
