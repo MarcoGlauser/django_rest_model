@@ -50,14 +50,10 @@ class RestModel(object,metaclass = Constructor):
     _default_manager = RestManager
     objects = None #IDE Autocompletion
 
-    class DoesNotExist(Exception):
-        pass
+    class DoesNotExist(Exception):pass
+    class MultipleObjectsReturned(Exception):pass
 
-    class MultipleObjectsReturned(Exception):
-        pass
-
-    class Meta:
-        pass
+    class Meta:pass
 
     def __init__(self,*args, **kwargs):
         opts = self._meta
