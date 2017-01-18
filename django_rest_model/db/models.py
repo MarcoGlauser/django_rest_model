@@ -137,6 +137,9 @@ class RestModel(object,metaclass = Constructor):
             return getattr(self, field_name)
         return getattr(self, field.attname)
 
+    def save(self):
+        self.objects.create(self)
+
     def __eq__(self, other):
         if isinstance(other, RestModel):
             return self.pk == other.pk

@@ -73,3 +73,18 @@ class TestFilter(TestCase):
 
         request_url = RestQuerySet(model=RestTestModel).filter(name='test').filter(test__id=1).url
         self.assertIn(request_url,expected)
+
+class TestAll(TestCase):
+    @mock.patch('django_rest_model.db.query.RestQuerySet._get_data')
+    def test_simple(self, mock_get_data):
+        queryset = RestQuerySet(model=RestTestModel)
+        queryset.all()
+        self.assertEqual(base_url , queryset.url)
+
+class TestCount(TestCase):
+    @mock.patch('django_rest_model.db.query.RestQuerySet._get_data')
+    def test_simple(self, mock_get_data):
+        mock_get_data.return_value = [1, 2]
+        queryset = RestQuerySet(model=RestTestModel)
+        self.assertEqual(2 , queryset.count())
+

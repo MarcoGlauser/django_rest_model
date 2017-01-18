@@ -39,10 +39,12 @@ class TestRestModel(TestCase):
         request_url = RestTestModel.objects.filter(name='test', test__id=1).url
 '''
 
-#Bla.objects.get(pk=1) -> GET /1/ or GET http://test.com/bla/?pk=1
-#Bla.objects.filter(name__contains='asdf') -> GET /?name__contains='asdf'
+##Bla.objects.get(pk=1) -> GET /1/ or GET http://test.com/bla/?pk=1
+##asdf = Test.objects.get(1)
+##Bla.objects.filter(name__contains='asdf') -> GET /?name__contains='asdf'
+##Bla.objects.all() -> get /
+##Bla.objects.count()
 
-#asdf = Test.objects.get(1)
 #Bla.objects.filter(test=asdf) -> GET /?test__pk=1
 
 #print asdf.bla_set.all() -> GET /?test__pk=1
@@ -52,10 +54,9 @@ class TestRestModel(TestCase):
 
 #asdf.bla_set.create(name='foo',test=asdf) -> POST / { "name":"foo", "test_id":1}
 
-#Bla.objects.all() -> get /
 
-#Bla.objects.filter(name__contains='asdf') -> GET /?name__contains='asdf'&ordering=name
-#Bla.objects.filter(name__contains='asdf') -> GET /?name__contains='asdf'&ordering=-name
+#Bla.objects.filter(name__contains='asdf').order_by('name') -> GET /?name__contains='asdf'&ordering=name
+#Bla.objects.filter(name__contains='asdf').order_by('-name') -> GET /?name__contains='asdf'&ordering=-name
 
 #Bla.objects.filter(name__contains='asdf').values()
 #Bla.objects.filter(name__contains='asdf').values('id','name')
@@ -64,4 +65,3 @@ class TestRestModel(TestCase):
     # Bla(name='another')
     # ])
 
-#Bla.objects.count()

@@ -150,3 +150,6 @@ class PaginatedRestQuerySet(RestQuerySet):
     #Todo
     def count(self):
         raise NotImplementedError
+
+    def _get_data(self):
+        raise NotImplementedError
