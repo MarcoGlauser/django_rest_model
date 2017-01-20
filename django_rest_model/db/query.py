@@ -1,5 +1,6 @@
 from django_rest_model.db import helpers
 from requests import Request
+from rest_framework.exceptions import APIException
 
 
 class RestQuery:
@@ -49,7 +50,7 @@ class BaseQuerySet:
         return self.count()
 
     def create(self, *args, **kwargs):
-        self._create(*args, **kwargs)
+        return self._create(*args, **kwargs)
 
     def filter(self, *args, **kwargs):
         existing_query_copy = dict(self.filter_query)
@@ -73,6 +74,9 @@ class BaseQuerySet:
             "get() returned more than one %s -- it returned %s!" %
             (type(self.model), number_of_results)
         )
+
+    def exists(self):
+        return self.count() > 0
 
     def _set_model_attrs(self, instance):
         instance._meta = self.model._meta
@@ -129,13 +133,13 @@ class RestQuerySet(BaseQuerySet):
         response = self._send_data('POST',data)
         serializer = self.model.get_serializer()(data=response)
         if not serializer.is_valid():
-            raise Exception('Invalid deserialization for %s model: %s' % (type(self.model), serializer.errors))
-        new_instance = helpers.create_instance(self.model.__class__,serializer.validated_data)
+            raise APIException('Invalid Response from REST Server for creating a new %s model: %s' % (repr(self.model), serializer.errors))
+
+        new_instance = helpers.create_instance(self.model,serializer.validated_data)
         return new_instance
 
     def _send_data(self,operation,data):
         pass
-
 
 
     def _get_detail_url(self):

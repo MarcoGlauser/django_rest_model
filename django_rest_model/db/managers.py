@@ -16,6 +16,9 @@ class BaseManager:
     def iterator(self):
         return iter(self.get_queryset())
 
+    def none(self, *args, **kwargs):
+        return self.get_queryset().none()
+
     def all(self):
         return self.get_queryset().all()
 

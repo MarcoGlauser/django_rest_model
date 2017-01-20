@@ -1,40 +1,31 @@
-from unittest import mock
-
-from django.apps import apps
-from django.db import models
-from django.test import TestCase
-
-from django_rest_model.db.models import PaginatedDRFModel
-from rest_framework import serializers
-
 base_url = 'http://test.com/'
 
 
 
-
+'''
 class RestTestModel(PaginatedDRFModel):
     _base_url = base_url
+
+    name = models.CharField(max_length=256)
+    id = models.AutoField(primary_key=True)
 
     @classmethod
     def get_serializer(self):
         return RestTestModelSerializer
 
-    name = models.CharField(max_length=256)
-
-    class Meta:
-        app_label = "test"
-        fields = ['id','name']
 
 class RestTestModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = RestTestModel
+        fields = ['__all__']
 
 class TestSerializer(TestCase):
     def test_get_serializer(self):
         test = RestTestModel(name='Test')
+        print(RestTestModel._meta.get_fields(include_hidden=True))
         test.get_serializer()
 
-'''class NormalDBModel(models.Model):
+class NormalDBModel(models.Model):
     name = models.CharField(max_length=256)
     #Test = models.ForeignKey(Bla)
 
