@@ -106,7 +106,6 @@ class TestCount(TestCase):
 
 
 class TestCreate(TestCase):
-
     @mock.patch('django_rest_model.db.query.RestQuerySet._send_data')
     def test_simple(self, mock_send_data):
         mock_send_data.return_value = {'id':1,'name':'asdf'}
@@ -124,10 +123,11 @@ class TestCreate(TestCase):
 
     @mock.patch('django_rest_model.db.query.RestQuerySet._send_data')
     def test_creation_from_instance(self, mock_send_data):
-        mock_send_data.return_value = {'id': 1, 'name': 'asdf'}
-        instance = RestTestQueryModel(name='asdf')
+        name = 'test'
+        mock_send_data.return_value = {'id': 1, 'name': name}
+        instance = RestTestQueryModel(name=name)
         queryset = RestQuerySet(model=RestTestQueryModel)
         new_instance = queryset.create(instance)
-        mock_send_data.assert_called_with('POST',{'id': None, 'name': 'asdf'})
+        mock_send_data.assert_called_with('POST',{'id': None, 'name':name})
         self.assertEqual(new_instance.id,mock_send_data.return_value['id'])
         self.assertEqual(new_instance.name, mock_send_data.return_value['name'])
