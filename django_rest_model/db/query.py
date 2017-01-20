@@ -104,29 +104,18 @@ class RestQuerySet(BaseQuerySet):
     def _get_data(self):
         if not self._cache:
             if ['id'] in self.filter_query:
-                #thread = self.mailer.get_thread_by_id(self.credentials,
-                #                                      self.filter_query['id'],
-                #                                      cls=self.model)
-                #self._cache = [self._set_model_attrs(thread)]
-                self._cache= self.filter_query
+                pass
             else:
-                #to = (self.filter_query['to__icontains']
-                #      if 'to__icontains' in self.filter_query
-                #      else None)
-                #all_threads = self.mailer.get_all_threads(self.credentials,
-                #                                          to=to, cls=self.model)
-                #self._cache = map(self._set_model_attrs, all_threads)
-                self._cache = self.filter_query
+                pass
         return self._cache
 
     def _create(self, instance = None, **kwargs):
 
-        # todo maybe refactor serializer/get_serializer
         #instance passed
         if instance:
-            if not isinstance(instance,type(self.model)):
-                raise TypeError('Wrong Type passed for creating a new instance. %s was provided, %s was required' % (type(instance),type(self.model)))
-            data = instance.get_serializer().data
+            if not isinstance(instance,self.model):
+                raise TypeError('Wrong Type passed for creating a new instance. %s was provided, %s was required' % (type(instance),self.model))
+            data = instance.get_serializer()(instance).data
         else:
             data = kwargs
 

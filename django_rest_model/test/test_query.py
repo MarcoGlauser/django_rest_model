@@ -111,13 +111,23 @@ class TestCreate(TestCase):
     def test_simple(self, mock_send_data):
         mock_send_data.return_value = {'id':1,'name':'asdf'}
         queryset = RestQuerySet(model=RestTestQueryModel)
-        instance = queryset.create(id=1,name="Test")
-        self.assertEqual(instance.id,mock_send_data.return_value['id'])
-        self.assertEqual(instance.name, mock_send_data.return_value['name'])
+        new_instance = queryset.create(id=1,name="Test")
+        self.assertEqual(new_instance.id,mock_send_data.return_value['id'])
+        self.assertEqual(new_instance.name, mock_send_data.return_value['name'])
 
     @mock.patch('django_rest_model.db.query.RestQuerySet._send_data')
     def test_invalid_return(self, mock_send_data):
         mock_send_data.return_value = {'name': 'asdf'}
         queryset = RestQuerySet(model=RestTestQueryModel)
         with self.assertRaises(APIException):
-            instance = queryset.create(id=1, name="Test")
+            queryset.create(id=1, name="Test")
+
+    @mock.patch('django_rest_model.db.query.RestQuerySet._send_data')
+    def test_creation_from_instance(self, mock_send_data):
+        mock_send_data.return_value = {'id': 1, 'name': 'asdf'}
+        instance = RestTestQueryModel(name='asdf')
+        queryset = RestQuerySet(model=RestTestQueryModel)
+        new_instance = queryset.create(instance)
+        mock_send_data.assert_called_with('POST',{'id': None, 'name': 'asdf'})
+        self.assertEqual(new_instance.id,mock_send_data.return_value['id'])
+        self.assertEqual(new_instance.name, mock_send_data.return_value['name'])
