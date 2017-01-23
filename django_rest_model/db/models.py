@@ -52,7 +52,8 @@ class Constructor(type):
             dm = attrs.pop('_default_manager')
             new_class._default_manager = dm(new_class)
         except KeyError:
-            new_class._default_manager = new_class._default_manager(new_class)
+            if hasattr(new_class,'_default_manager'):
+                new_class._default_manager.model = new_class
 
         new_class.objects = new_class._default_manager
 
@@ -110,17 +111,19 @@ class Constructor(type):
         super(Constructor, self).__init__(name, bases, attrs)
 
 
-class RestModel(object, metaclass=Constructor):
-
+class BaseModel (object,metaclass=Constructor):
     _deferred = False
     _state = ModelState()
-    _default_manager = RestManager
     objects = None #IDE Autocompletion
 
     class DoesNotExist(ObjectDoesNotExist):pass
     class MultipleObjectsReturned(ObjectDoesNotExist):pass
 
     class Meta:pass
+
+class RestModel(BaseModel):
+
+    _default_manager = RestManager
 
     def __init__(self, *args, **kwargs):
         self.process_fields(*args, **kwargs)
@@ -213,7 +216,12 @@ class RestModel(object, metaclass=Constructor):
         return getattr(self, field.attname)
 
     def save(self):
-        self = self.objects.create(self)
+        new_instance = self.objects.create(self)
+        for field in new_instance._meta.get_fields():
+            if getattr(new_instance,field.attname):
+                value = getattr(new_instance,field.attname)
+                setattr(self,field.attname,value)
+        self._state.adding = False
 
     def __eq__(self, other):
         if isinstance(other, RestModel):
@@ -229,8 +237,15 @@ class RestModel(object, metaclass=Constructor):
     def _get_unique_checks(self, *args, **kwargs):
         return ([], [],)
 
-    def _get_pk_val(self):
-        return None
+    def _get_pk_val(self, meta=None):
+        if not meta:
+            meta = self._meta
+        return getattr(self, meta.pk.attname)
+
+    def _set_pk_val(self, value):
+        return setattr(self, self._meta.pk.attname, value)
+
+    pk = property(_get_pk_val, _set_pk_val)
 
     @property
     def _serializer(self):

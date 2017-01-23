@@ -12,7 +12,7 @@ class RestOptions(Options):
     def __init__(self, meta, *args, **kwargs):
         super().__init__(meta,*args,**kwargs)
 
-        self.auto_created = False
+        self.auto_created = True
         self.abstract = False
         self.swapped = False
         self.managed = False

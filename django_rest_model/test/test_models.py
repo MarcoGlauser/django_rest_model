@@ -1,13 +1,20 @@
+from unittest import mock
+
+from django.db import models
+from django.test import TestCase
+from django_rest_model.db.models import PaginatedDRFModel
+from rest_framework import serializers
+
 base_url = 'http://test.com/'
 
 
 
-'''
+
 class RestTestModel(PaginatedDRFModel):
     _base_url = base_url
 
+    id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=256)
-    id = models.AutoField(primary_key=True)
 
     @classmethod
     def get_serializer(self):
@@ -17,35 +24,54 @@ class RestTestModel(PaginatedDRFModel):
 class RestTestModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = RestTestModel
-        fields = ['__all__']
+        fields = ['id','name']
+
+class RestFKTestModel(PaginatedDRFModel):
+    _base_url = base_url
+
+    id = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=256)
+    fk_test = models.ForeignKey(RestTestModel)
+
+    @classmethod
+    def get_serializer(self):
+        return RestTestModelSerializer
+
+class RestFKTestModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RestFKTestModel
+        fields = ['id','name','fk_test']
+
+'''
+class NormalDBModel(models.Model):
+    name = models.CharField(max_length=256)
+    #fk_test = models.ForeignKey(RestTestModel)
+
+    class Meta:
+        app_label = 'tests'
+'''
 
 class TestSerializer(TestCase):
     def test_get_serializer(self):
         test = RestTestModel(name='Test')
-        print(RestTestModel._meta.get_fields(include_hidden=True))
         test.get_serializer()
 
-class NormalDBModel(models.Model):
-    name = models.CharField(max_length=256)
-    #Test = models.ForeignKey(Bla)
-
-    class Meta:
-        app_label = 'tests'
-
-
-
 class TestRestModel(TestCase):
-
     def test_init(self):
         RestTestModel(name='Test')
 
+    @mock.patch('django_rest_model.db.query.RestQuerySet.create')
+    def test_create_FK(self,queryset_mock):
+        rest_model_instance = RestTestModel(id=1, name="Test")
+        rest_fk_model_instance = RestFKTestModel(name="TestFK", fk_test=rest_model_instance)
+        saved_fk_model_instance = RestFKTestModel(id=1,name="TestFK",fk_test=rest_model_instance)
+        queryset_mock.return_value = saved_fk_model_instance
+        rest_fk_model_instance.save()
+        queryset_mock.assert_called_with(rest_fk_model_instance)
+        self.assertEqual(rest_fk_model_instance.id,1)
+        self.assertEqual(rest_fk_model_instance.fk_test_id, 1)
+        self.assertEqual(rest_fk_model_instance.name, "TestFK")
 
-
-    def test_FK(self):
-        RestTestModel(id=1)
-        NormalDBModel()
-        request_url = RestTestModel.objects.filter(name='test', test__id=1).url
-'''
 
 ##Bla.objects.get(pk=1) -> GET /1/ or GET http://test.com/bla/?pk=1
 ##asdf = Test.objects.get(1)
