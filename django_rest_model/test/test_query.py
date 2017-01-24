@@ -1,6 +1,7 @@
 from unittest import TestCase
 from unittest import mock
 
+import requests
 from django.db import models
 from django_rest_model.db.models import  RestModel
 from django_rest_model.db.query import RestQuerySet, BaseQuerySet
@@ -155,8 +156,45 @@ class TestDelete(TestCase):
         self.assertEqual(queryset.identifier,1)
 
     @mock.patch('django_rest_model.db.query.RestQuerySet._send_data')
+    def test_instance(self, mock_send_data):
+        instance = RestTestQueryModel(id=1,name="Test")
+        mock_send_data.return_value = None
+        queryset = RestQuerySet(model=RestTestQueryModel)
+        queryset.delete(instance)
+        mock_send_data.assert_called_with('DELETE')
+        self.assertEqual(queryset.identifier,1)
+
+    @mock.patch('django_rest_model.db.query.RestQuerySet._send_data')
     def test_nothing(self, mock_send_data):
         mock_send_data.return_value = None
         queryset = RestQuerySet(model=RestTestQueryModel)
         with self.assertRaises(ValueError):
             queryset.delete()
+
+
+class TestGetData(TestCase):
+    @mock.patch('requests.sessions.Session.send')
+    @mock.patch('requests.Response.json')
+    def test_get(self, response_json_mock, session_mock):
+        response = requests.Response()
+        response.status_code = 200
+        session_mock.return_value=response
+        response_json_mock.return_value = {'name': 'Test', 'id':1}
+        queryset = RestQuerySet(model=RestTestQueryModel)
+        queryset.identifier = 1
+        single_instance = queryset._get_data()
+        self.assertIsInstance(single_instance[0],RestTestQueryModel)
+
+    @mock.patch('requests.sessions.Session.send')
+    @mock.patch('requests.Response.json')
+    def test_list(self, response_json_mock, session_mock):
+        response = requests.Response()
+        response.status_code = 200
+        session_mock.return_value=response
+        response_json_mock.return_value = [{'name': 'Test', 'id': 1},{'name': 'Test', 'id': 2}]
+        queryset = RestQuerySet(model=RestTestQueryModel)
+        multiple_instances = queryset._get_data()
+        self.assertIsInstance(multiple_instances[0], RestTestQueryModel)
+        self.assertIsInstance(multiple_instances[1], RestTestQueryModel)
+        self.assertEqual(multiple_instances[0].id,1)
+        self.assertEqual(multiple_instances[1].id,2)

@@ -1,5 +1,5 @@
-from django_rest_model.db import helpers
 from requests import Request
+from requests import Session
 from rest_framework.exceptions import APIException
 
 
@@ -109,17 +109,20 @@ class RestQuerySet(BaseQuerySet):
     def __init__(self, *args, **kwargs):
         super(RestQuerySet, self).__init__(*args, **kwargs)
         self.identifier = None
+        self.session = Session()
 
     @property
     def url(self):
         return self._build_request('GET').url
 
+    #TODO Pagination
     def _get_data(self):
         if not self._cache:
-            if self.identifier in self.filter_query:
-                pass
-            else:
-                pass
+            request = self._build_request('GET')
+            response = self.session.send(request)
+            response.raise_for_status()
+            instances = self._create_model_instance(response.json())
+            self._cache = instances
         return self._cache
 
     def _send_data(self,operation,data=None):
@@ -134,7 +137,7 @@ class RestQuerySet(BaseQuerySet):
             data = kwargs
 
         response = self._send_data('POST',data)
-        return self._create_instance_from_dict(response)
+        return self._create_model_instance(response)[0]
 
     def _delete(self):
         self._send_data('DELETE')
@@ -170,14 +173,20 @@ class RestQuerySet(BaseQuerySet):
         request = Request(operation, request_url, params=params, headers=None)
         return request.prepare()
 
-    def _create_instance_from_dict(self,data):
-        serializer = self.model.get_serializer()(data=data)
-        if not serializer.is_valid():
-            raise APIException('Invalid Response from REST Server for creating a new %s model: %s' % (repr(self.model), serializer.errors))
+    def _create_model_instance(self, data):
+        new_instances = []
+        if not isinstance(data, list):
+            data = [data]
+        for element in data:
+            serializer = self.model.get_serializer()(data=element)
+            if not serializer.is_valid():
+                raise APIException('Invalid Response from REST Server for creating a new %s model: %s' % (repr(self.model), serializer.errors))
+            new_instance = self.model(**serializer.validated_data)
+            new_instance._state.adding = False
+            new_instance._state.db = None
+            new_instances.append(new_instance)
 
-        new_instance = helpers.create_instance(self.model,serializer.validated_data)
-        return new_instance
-
+        return new_instances
 
 class PaginatedRestQuerySet(RestQuerySet):
     #Todo
