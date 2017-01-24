@@ -34,7 +34,7 @@ class RestFKTestModel(PaginatedDRFModel):
 
 class NormalDBModel(models.Model):
     name = models.CharField(max_length=256)
-    #fk_test = models.ForeignKey(RestTestModel,db_constraint=False)
+    fk_test = models.ForeignKey(RestTestModel,db_constraint=False)
 
     class Meta:
         app_label = 'tests'
@@ -81,17 +81,11 @@ class TestRestModel(TestCase):
         self.assertEqual(rest_model_instance.id,1)
         self.assertEqual(rest_model_instance.name, "Test")
 
-    @mock.patch('django_rest_model.db.query.RestQuerySet.delete')
-    def test_delete(self,queryset_mock):
-        rest_model_instance = RestTestModel(id=1, name="Test")
-        rest_model_instance.delete()
-        queryset_mock.assert_called_with(rest_model_instance,None)
-
     @mock.patch('django_rest_model.db.query.RestQuerySet.create')
-    def test_create_FK(self,queryset_mock):
+    def test_create_fk(self,queryset_mock):
         rest_model_instance = RestTestModel(id=1, name="Test")
         rest_fk_model_instance = RestFKTestModel(name="TestFK", fk_test=rest_model_instance)
-        saved_fk_model_instance = RestFKTestModel(id=1,name="TestFK",fk_test=rest_model_instance)
+        saved_fk_model_instance = RestFKTestModel(id=1,name="TestFK",fk_test_id=rest_model_instance.id)
         queryset_mock.return_value = saved_fk_model_instance
         rest_fk_model_instance.save()
         self.assertEqual(rest_fk_model_instance.fk_test_id, 1)
@@ -99,7 +93,7 @@ class TestRestModel(TestCase):
 
 
     @mock.patch('django_rest_model.db.query.RestQuerySet.create')
-    def test_create_FK_to_db(self,queryset_mock):
+    def test_create_fk_to_db(self,queryset_mock):
         db_model_instance = NormalDBModel(id=1, name="Test")
         rest_fk_model_instance = RestFKToDBModel(name="TestFK", fk_test=db_model_instance)
         saved_fk_model_instance = RestFKToDBModel(id=1,name="TestFK",fk_test_id=db_model_instance.id)
@@ -107,6 +101,21 @@ class TestRestModel(TestCase):
         rest_fk_model_instance.save()
         self.assertEqual(rest_fk_model_instance.fk_test_id, 1)
         self.assertEqual(rest_fk_model_instance.fk_test, db_model_instance)
+
+    '''
+    # Not yet working. More research required
+    @mock.patch('django_rest_model.db.query.RestQuerySet.create')
+    def test_create_db_fk_to_rest(self,queryset_mock):
+        rest_model_instance = RestTestModel(id=1, name="Test")
+        db_model_instance = NormalDBModel(id=1, name="Test",fk_test=rest_model_instance)
+        db_model_instance.save()
+    '''
+
+    @mock.patch('django_rest_model.db.query.RestQuerySet.delete')
+    def test_delete(self,queryset_mock):
+        rest_model_instance = RestTestModel(id=1, name="Test")
+        rest_model_instance.delete()
+        queryset_mock.assert_called_with(rest_model_instance,None)
 
 ##Bla.objects.get(pk=1) -> GET /1/ or GET http://test.com/bla/?pk=1
 ##asdf = Test.objects.get(1)
