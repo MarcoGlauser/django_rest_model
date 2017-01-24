@@ -223,6 +223,9 @@ class RestModel(BaseModel):
                 setattr(self,field.attname,value)
         self._state.adding = False
 
+    def delete(self):
+        self.objects.delete(self)
+
     def __eq__(self, other):
         if isinstance(other, RestModel):
             return self.pk == other.pk

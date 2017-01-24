@@ -9,7 +9,6 @@ base_url = 'http://test.com/'
 
 
 
-
 class RestTestModel(PaginatedDRFModel):
     _base_url = base_url
 
@@ -45,7 +44,7 @@ class RestFKTestModelSerializer(serializers.ModelSerializer):
 '''
 class NormalDBModel(models.Model):
     name = models.CharField(max_length=256)
-    #fk_test = models.ForeignKey(RestTestModel)
+    fk_test = models.ForeignKey(RestTestModel,db_constraint=False)
 
     class Meta:
         app_label = 'tests'
@@ -61,17 +60,29 @@ class TestRestModel(TestCase):
         RestTestModel(name='Test')
 
     @mock.patch('django_rest_model.db.query.RestQuerySet.create')
+    def test_save(self,queryset_mock):
+        rest_model_instance = RestTestModel(name="Test")
+        queryset_mock.return_value = RestFKTestModel(id=1,name="Test")
+        rest_model_instance.save()
+        queryset_mock.assert_called_with(rest_model_instance)
+        self.assertEqual(rest_model_instance.id,1)
+        self.assertEqual(rest_model_instance.name, "Test")
+
+    @mock.patch('django_rest_model.db.query.RestQuerySet.delete')
+    def test_save(self,queryset_mock):
+        rest_model_instance = RestTestModel(id=1, name="Test")
+        rest_model_instance.delete()
+        queryset_mock.assert_called_with(rest_model_instance,None)
+
+    @mock.patch('django_rest_model.db.query.RestQuerySet.create')
     def test_create_FK(self,queryset_mock):
         rest_model_instance = RestTestModel(id=1, name="Test")
         rest_fk_model_instance = RestFKTestModel(name="TestFK", fk_test=rest_model_instance)
         saved_fk_model_instance = RestFKTestModel(id=1,name="TestFK",fk_test=rest_model_instance)
         queryset_mock.return_value = saved_fk_model_instance
         rest_fk_model_instance.save()
-        queryset_mock.assert_called_with(rest_fk_model_instance)
-        self.assertEqual(rest_fk_model_instance.id,1)
         self.assertEqual(rest_fk_model_instance.fk_test_id, 1)
-        self.assertEqual(rest_fk_model_instance.name, "TestFK")
-
+        self.assertEqual(rest_fk_model_instance.fk_test, rest_model_instance)
 
 ##Bla.objects.get(pk=1) -> GET /1/ or GET http://test.com/bla/?pk=1
 ##asdf = Test.objects.get(1)

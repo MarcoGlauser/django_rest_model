@@ -75,13 +75,19 @@ class BaseQuerySet:
             (type(self.model), number_of_results)
         )
 
+    def delete(self, instance=None, pk=None):
+        if instance:
+            if not isinstance(instance,self.model):
+                raise TypeError('Wrong Type passed for deleting an instance. %s was provided, %s was required' % (type(instance),self.model))
+            pk = instance.pk
+        else:
+            if not pk:
+                raise ValueError('No instance and no pk set for deletion! please set either one')
+        self.filter(pk=pk)
+        self._delete()
+
     def exists(self):
         return self.count() > 0
-
-    def _set_model_attrs(self, instance):
-        instance._meta = self.model._meta
-        instance._state = self.model._state
-        return instance
 
     def _get_filter_args(self, args, kwargs):
         filter_args = kwargs if kwargs else {}
@@ -95,22 +101,31 @@ class BaseQuerySet:
     def _create(self, *args, **kwargs):
         raise NotImplementedError
 
+    def _delete(self):
+        raise NotImplementedError
+
 class RestQuerySet(BaseQuerySet):
 
     def __init__(self, *args, **kwargs):
         super(RestQuerySet, self).__init__(*args, **kwargs)
         self.identifier = None
 
+    @property
+    def url(self):
+        return self._build_request('GET').url
+
     def _get_data(self):
         if not self._cache:
-            if ['id'] in self.filter_query:
+            if self.identifier in self.filter_query:
                 pass
             else:
                 pass
         return self._cache
 
-    def _create(self, instance = None, **kwargs):
+    def _send_data(self,operation,data=None):
+        pass
 
+    def _create(self, instance = None, **kwargs):
         #instance passed
         if instance:
             if not isinstance(instance,self.model):
@@ -127,9 +142,8 @@ class RestQuerySet(BaseQuerySet):
         new_instance = helpers.create_instance(self.model,serializer.validated_data)
         return new_instance
 
-    def _send_data(self,operation,data):
-        pass
-
+    def _delete(self):
+        self._send_data('DELETE')
 
     def _get_detail_url(self):
         if self.identifier:
@@ -141,18 +155,16 @@ class RestQuerySet(BaseQuerySet):
         if len(args) > 0:
             filter_args.update(dict(args[0].children))
 
-        if 'id' in filter_args:
-            self.identifier = filter_args['id']
-            filter_args.pop('id')
+        for field in self.model._meta.get_fields():
+            if field.primary_key and field.attname in filter_args:
+                self.identifier = filter_args[field.attname]
+                filter_args.pop(field.attname)
+
         if 'pk' in filter_args:
             self.identifier = filter_args['pk']
             filter_args.pop('pk')
 
         return filter_args
-
-    @property
-    def url(self):
-        return self._build_request('GET').url
 
     def _build_request(self, operation):
         request_url = self.model._base_url

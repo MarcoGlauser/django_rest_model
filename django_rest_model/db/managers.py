@@ -44,6 +44,9 @@ class BaseManager:
     def create(self,*args, **kwargs):
         return self.get_queryset().create(*args, **kwargs)
 
+    def delete(self, instance=None,pk=None):
+        return self.get_queryset().delete(instance,pk)
+
 class RestManager(BaseManager):
     queryset = RestQuerySet
 

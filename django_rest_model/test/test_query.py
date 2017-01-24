@@ -27,6 +27,12 @@ class RestTestModelSerializer(serializers.ModelSerializer):
         model = RestTestQueryModel
         fields = ['id','name']
 
+class RestTestAlternatePKModel(RestModel):
+    _base_url = base_url
+
+    name = models.CharField(max_length=1234)
+    other_identifier = models.IntegerField(primary_key=True)
+
 
 class TestGet(TestCase):
     @mock.patch('django_rest_model.db.query.RestQuerySet._get_data')
@@ -41,6 +47,13 @@ class TestGet(TestCase):
         mock_get_data.return_value = [1]
         queryset = RestQuerySet(model=RestTestQueryModel)
         queryset.get(pk=1)
+        self.assertEqual(base_url + '1/', queryset.url)
+
+    @mock.patch('django_rest_model.db.query.RestQuerySet._get_data')
+    def test_other_pk(self, mock_get_data):
+        mock_get_data.return_value = [1]
+        queryset = RestQuerySet(model=RestTestAlternatePKModel)
+        queryset.get(other_identifier=1)
         self.assertEqual(base_url + '1/', queryset.url)
 
     @mock.patch('django_rest_model.db.query.RestQuerySet._get_data')
@@ -131,3 +144,19 @@ class TestCreate(TestCase):
         mock_send_data.assert_called_with('POST',{'id': None, 'name':name})
         self.assertEqual(new_instance.id,mock_send_data.return_value['id'])
         self.assertEqual(new_instance.name, mock_send_data.return_value['name'])
+
+class TestDelete(TestCase):
+    @mock.patch('django_rest_model.db.query.RestQuerySet._send_data')
+    def test_pk(self, mock_send_data):
+        mock_send_data.return_value = None
+        queryset = RestQuerySet(model=RestTestQueryModel)
+        queryset.delete(pk=1)
+        mock_send_data.assert_called_with('DELETE')
+        self.assertEqual(queryset.identifier,1)
+
+    @mock.patch('django_rest_model.db.query.RestQuerySet._send_data')
+    def test_nothing(self, mock_send_data):
+        mock_send_data.return_value = None
+        queryset = RestQuerySet(model=RestTestQueryModel)
+        with self.assertRaises(ValueError):
+            queryset.delete()
