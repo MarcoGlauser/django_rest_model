@@ -126,7 +126,6 @@ class RestQuerySet(BaseQuerySet):
         pass
 
     def _create(self, instance = None, **kwargs):
-        #instance passed
         if instance:
             if not isinstance(instance,self.model):
                 raise TypeError('Wrong Type passed for creating a new instance. %s was provided, %s was required' % (type(instance),self.model))
@@ -135,12 +134,7 @@ class RestQuerySet(BaseQuerySet):
             data = kwargs
 
         response = self._send_data('POST',data)
-        serializer = self.model.get_serializer()(data=response)
-        if not serializer.is_valid():
-            raise APIException('Invalid Response from REST Server for creating a new %s model: %s' % (repr(self.model), serializer.errors))
-
-        new_instance = helpers.create_instance(self.model,serializer.validated_data)
-        return new_instance
+        return self._create_instance_from_dict(response)
 
     def _delete(self):
         self._send_data('DELETE')
@@ -175,6 +169,15 @@ class RestQuerySet(BaseQuerySet):
 
         request = Request(operation, request_url, params=params, headers=None)
         return request.prepare()
+
+    def _create_instance_from_dict(self,data):
+        serializer = self.model.get_serializer()(data=data)
+        if not serializer.is_valid():
+            raise APIException('Invalid Response from REST Server for creating a new %s model: %s' % (repr(self.model), serializer.errors))
+
+        new_instance = helpers.create_instance(self.model,serializer.validated_data)
+        return new_instance
+
 
 class PaginatedRestQuerySet(RestQuerySet):
     #Todo

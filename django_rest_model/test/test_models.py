@@ -20,11 +20,6 @@ class RestTestModel(PaginatedDRFModel):
         return RestTestModelSerializer
 
 
-class RestTestModelSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RestTestModel
-        fields = ['id','name']
-
 class RestFKTestModel(PaginatedDRFModel):
     _base_url = base_url
 
@@ -36,19 +31,37 @@ class RestFKTestModel(PaginatedDRFModel):
     def get_serializer(self):
         return RestTestModelSerializer
 
+
+class NormalDBModel(models.Model):
+    name = models.CharField(max_length=256)
+    #fk_test = models.ForeignKey(RestTestModel,db_constraint=False)
+
+    class Meta:
+        app_label = 'tests'
+
+
+class RestFKToDBModel(PaginatedDRFModel):
+    _base_url = base_url
+
+    id = models.IntegerField(primary_key=True)
+    fk_test = models.ForeignKey(NormalDBModel)
+
+class RestTestModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RestTestModel
+        fields = ['id','name']
+
+
 class RestFKTestModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = RestFKTestModel
         fields = ['id','name','fk_test']
 
-'''
-class NormalDBModel(models.Model):
-    name = models.CharField(max_length=256)
-    fk_test = models.ForeignKey(RestTestModel,db_constraint=False)
-
+class RestFKToDBModelSerializer(serializers.ModelSerializer):
     class Meta:
-        app_label = 'tests'
-'''
+        model = RestFKToDBModel
+        fields = ['id','fk_test']
+
 
 class TestSerializer(TestCase):
     def test_get_serializer(self):
@@ -69,7 +82,7 @@ class TestRestModel(TestCase):
         self.assertEqual(rest_model_instance.name, "Test")
 
     @mock.patch('django_rest_model.db.query.RestQuerySet.delete')
-    def test_save(self,queryset_mock):
+    def test_delete(self,queryset_mock):
         rest_model_instance = RestTestModel(id=1, name="Test")
         rest_model_instance.delete()
         queryset_mock.assert_called_with(rest_model_instance,None)
@@ -83,6 +96,17 @@ class TestRestModel(TestCase):
         rest_fk_model_instance.save()
         self.assertEqual(rest_fk_model_instance.fk_test_id, 1)
         self.assertEqual(rest_fk_model_instance.fk_test, rest_model_instance)
+
+
+    @mock.patch('django_rest_model.db.query.RestQuerySet.create')
+    def test_create_FK_to_db(self,queryset_mock):
+        db_model_instance = NormalDBModel(id=1, name="Test")
+        rest_fk_model_instance = RestFKToDBModel(name="TestFK", fk_test=db_model_instance)
+        saved_fk_model_instance = RestFKToDBModel(id=1,name="TestFK",fk_test_id=db_model_instance.id)
+        queryset_mock.return_value = saved_fk_model_instance
+        rest_fk_model_instance.save()
+        self.assertEqual(rest_fk_model_instance.fk_test_id, 1)
+        self.assertEqual(rest_fk_model_instance.fk_test, db_model_instance)
 
 ##Bla.objects.get(pk=1) -> GET /1/ or GET http://test.com/bla/?pk=1
 ##asdf = Test.objects.get(1)
